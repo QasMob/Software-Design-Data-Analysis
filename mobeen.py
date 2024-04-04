@@ -5,14 +5,20 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from collections import defaultdict
+import os
 
 
 def question4(fileName):
     # print to user they selected question 4
     print("You have selected question 4")
 
-    # Prompt user for the CSV file path
-    filePath = fileName
+    # Prompt user for the CSV file path with validation
+    while True:
+        filePath = input("Enter the path to the CSV file: ")
+        if os.path.isfile(filePath):
+            break
+        else:
+            print("File not found. Please enter a valid file path.")
 
     # Full list of industries
     industries = [
@@ -39,42 +45,66 @@ def question4(fileName):
     for index, industry in enumerate(industries):
         print(f"{index + 1}. {industry}")
 
-    # Get user's industry choice
-    industry_choice = int(input("Enter your choice: ")) - 1
-    industry_target = industries[industry_choice].split(' [')[
-        0]  # Extract the industry name without the code
+    # Get and validate user's industry choice
+    while True:
+        try:
+            industry_choice = int(input("Enter your choice: ")) - 1
+            if 0 <= industry_choice < len(industries):
+                industry_target = industries[industry_choice].split(' [')[0]
+                # Extract the industry name without the code
+                break
+            else:
+                print("Invalid choice. Please select a number from the list.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
 
-    # Get user's start and end year choices
-    start_year = int(input("Enter the start year: "))
-    end_year = int(input("Enter the end year: "))
+    # Get and validate user's start and end year choices
+    while True:
+        try:
+            start_year = int(input("Enter the start year: "))
+            end_year = int(input("Enter the end year: "))
+            if start_year <= end_year:
+                break
+            else:
+                print(
+                    "The start year must be less than or equal to the end year."
+                )
+        except ValueError:
+            print("Invalid input. Please enter a valid year.")
 
     # Use defaultdict to handle cumulative totals and counts for each year efficiently
     workweek_data = defaultdict(lambda: {'total': 0, 'count': 0})
-    with open(filePath, 'r', encoding='utf-8-sig') as csvfile:
-        # Utilize the DictReader to map the information read into a dictionary
-        # where each row is read as a dictionary
-        reader = csv.DictReader(csvfile)
 
-        # Process each row in the CSV file
-        for row in reader:
-            # Extract the industry category from the current row
-            industry = row[
-                'North American Industry Classification System (NAICS)']
-            # If the industry from the row starts with the target industry name,
-            # it means it matches or is a subcategory of the desired industry
-            if industry.startswith(industry_target):
-                # Extract the year from the 'REF_DATE' field and convert to an integer.
-                year = int(row['REF_DATE'][:4])
-                # If the year is within the specified range, process the data
-                if start_year <= year <= end_year:
-                    # Ensure that the 'VALUE' field, representing workweek length - is not empty
-                    value = row['VALUE']
-                    if value:
-                        # Convert the value to a float
-                        # for the respective year, also incrementing the count
-                        workweek_length = float(value)
-                        workweek_data[year]['total'] += workweek_length
-                        workweek_data[year]['count'] += 1
+    try:
+        with open(filePath, 'r', encoding='utf-8-sig') as csvfile:
+            # Utilize the DictReader to map the information read into a dictionary
+            # where each row is read as a dictionary
+            reader = csv.DictReader(csvfile)
+
+            # Process each row in the CSV file
+            for row in reader:
+                # Extract the industry category from the current row
+                industry = row[
+                    'North American Industry Classification System (NAICS)']
+                # If the industry from the row starts with the target industry name,
+                # it means it matches or is a subcategory of the desired industry
+                if industry.startswith(industry_target):
+                    # Extract the year from the 'REF_DATE' field and convert to an integer
+                    year = int(row['REF_DATE'][:4])
+                    # If the year is within the specified range, process the data
+                    if start_year <= year <= end_year:
+                        # Ensure that the 'VALUE' field, representing workweek length - is not empty
+                        value = row['VALUE']
+                        if value:
+                            # Convert the value to a float
+                            # for the respective year, also incrementing the count
+                            workweek_length = float(value)
+                            workweek_data[year]['total'] += workweek_length
+                            workweek_data[year]['count'] += 1
+
+    except Exception as e:
+        print(f"An error occurred while processing the CSV file: {e}")
+        exit()
 
     # Prepare a list of years within the specified range
     years = list(range(start_year, end_year + 1))
